@@ -12,53 +12,75 @@ public struct RealmWrapper {
     private var providedRealm: Realm?
 
     public init(providedRealm: Realm? = nil) {
-        self.providedRealm = providedRealm
+        self.provide(realm: providedRealm)
     }
+}
 
+extension RealmWrapper {
     public func objects<T: Object>(_ type: T.Type, predicate: NSPredicate? = nil) -> Results<T>? {
-        if let predicate = predicate {
+        if let predicate {
             return realm?.objects(type).filter(predicate)
-        } else {
-            return realm?.objects(type)
         }
+        return realm?.objects(type)
     }
 
     public func object<T: Object>(_ type: T.Type, key: String) -> T? {
         realm?.object(ofType: type, forPrimaryKey: key)
     }
 
-    public func add<T: Object>(_ data: [T], update: Realm.UpdatePolicy = .all) {
-        guard let realm = realm else { return }
-        try? realm.write {
-            realm.add(data, update: update)
+    @discardableResult public func add<T: Object>(_ data: [T], update: Realm.UpdatePolicy = .all) -> Bool {
+        guard let realm else { return false }
+        do {
+            try realm.write {
+                realm.add(data, update: update)
+            }
+            return true
+        } catch {
+            return false
         }
     }
 
-    public func add<T: Object>(_ data: T, update: Realm.UpdatePolicy = .all) {
+    @discardableResult public func add<T: Object>(_ data: T, update: Realm.UpdatePolicy = .all) -> Bool {
         add([data], update: update)
     }
 
-    public func runTransaction(action: () -> Void) {
-        try? realm?.write {
-            action()
+    @discardableResult public func runTransaction(action: (Realm) -> Void) -> Bool {
+        guard let realm else { return false }
+        do {
+            try realm.write {
+                action(realm)
+            }
+            return true
+        } catch {
+            return false
         }
     }
 
-    public func delete<T: Object>(_ data: [T]) {
-        guard let realm = realm else { return }
-        try? realm.write {
-            realm.delete(data)
+    @discardableResult public func delete<T: Object>(_ data: [T]) -> Bool {
+        guard let realm else { return false }
+        do {
+            try realm.write {
+                realm.delete(data)
+            }
+            return true
+        } catch {
+            return false
         }
     }
 
-    public func delete<T: Object>(_ data: T) {
+    @discardableResult public func delete<T: Object>(_ data: T) -> Bool {
         delete([data])
     }
 
-    public func deleteAll() {
-        guard let realm = realm else { return }
-        try? realm.write {
-            realm.deleteAll()
+    @discardableResult public func deleteAll() -> Bool {
+        guard let realm else { return false }
+        do {
+            try realm.write {
+                realm.deleteAll()
+            }
+            return true
+        } catch {
+            return false
         }
     }
 }
